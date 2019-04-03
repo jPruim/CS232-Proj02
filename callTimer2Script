@@ -1,0 +1,828 @@
+Script started on 2019-04-03 01:27:52-0400
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ exit[Kls
+[0m[01;32ma.out[0m             LineController.cpp    Model.cpp           TextController.h
+callTimer2.cpp    LineController.h      Model.h             TextController.h.gch
+callTimer2Script  LineController.h.gch  Model.h.gch         TextInterface.cpp
+Controller.h      LineInterface.cpp     NanoTimer.h         TextInterface.h
+Controller.h.gch  LineInterface.h       NanoTimer.h.gch     TextInterface.h.gch
+[01;34mjunk[0m              LineInterface.h.gch   [01;32mprogram[0m
+[01;34mjunk2[0m             Makefile              TextController.cpp
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ g++ -pthread *.h *.cpp
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ cat *.h *.cpp
+/*
+*Controller.h
+*Made By Jason Pruim 
+*Feb 24, 2019
+*For CS232 at Calvin College
+*a class to run the model class
+*and print out results
+*/
+#ifndef FILE_Controller
+#define FILE_Controller
+#include "Model.h"
+#include <iostream>
+
+using namespace std;
+/*class declaration for Controller*/
+class Controller{
+	public:
+		void run(bool thread, bool process,int repeat);
+
+};
+
+#endif /* !FILE_Model */
+
+/*
+*LineController.h
+*Made By Jason Pruim 
+*Feb 24, 2019
+*For CS232 at Calvin College
+*a class to run the model class
+*and print out results
+*/
+#ifndef FILE_LC
+#define FILE_LC
+
+#include "Model.h"
+#include <iostream>
+#include "LineInterface.h"
+using namespace std;
+
+/*class declaration for Controller*/
+class LineController{
+	public:
+	bool process;
+	bool thread;
+	int repeat;
+	LineInterface lI;
+	public:
+	LineController(int argc, char* argv[]);
+	void run();
+
+};
+#endif /* !FILE_LC */
+/*
+*LineInterface.h
+*Made By Jason Pruim 
+*Feb. 24, 2019
+*For CS232 at Calvin College
+*a class to handle commandline interface
+*
+*/
+
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+using namespace std;
+//Class declaration for LineInterface
+class LineInterface{
+	public:
+	LineInterface();
+	void printNoRun();
+	void printNotNum();
+	void printTiming(string typeName, double time); 
+};
+
+/*
+*Model.h
+*Made By Jason Pruim 
+*Feb. 24, 2019
+*For CS232 at Calvin College
+*a class to determine averages of thread and process creation
+*/
+
+#ifndef FILE_Model
+#define FILE_Model
+
+#include <iostream>
+#include <string>
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <cstdlib>
+#include <pthread.h>
+#include "NanoTimer.h"
+
+using namespace std;
+
+//Class to run the Model of timings
+class Model {
+	static void* PrintMsg(void *threadid);
+	public:
+		double processTiming(int repeat);
+		double threadTiming(int repeat);
+};
+
+
+#endif /* !FILE_Model */
+/* NanoTimer.h provides a simple nano-scale timer.
+ *
+ * Begun by: John Kloosterman, for CS 232 at Calvin College.
+ * Enhanced by: Prof. Adams.
+ *
+ * To use this class, compile/link with the '-lrt' switch.
+ *
+ * In Eclipse: Project > Properties > GCC C++ Linker > Libraries > Libraries > +, add 'rt'
+ */
+
+#ifndef NANO_TIMER_H_
+#define NANO_TIMER_H_
+
+#include <ctime>        // timespec, clock_gettime(), etc.
+#include <iostream>     // C++ I/O
+#include <iomanip>      // setprecision()
+#include <sstream>      // stringstream for in-memory formatting
+using namespace std;
+
+class NanoTimer {
+public:
+	NanoTimer()                  { myTotalTime = 0.0; }
+	void start();
+	void stop();
+	void reset()                 { myTotalTime = 0.0; }
+    string asString() const;
+	double getTotalTime() const  { return myTotalTime; }
+	double asDouble() const;
+
+private:
+	struct timespec myStart;
+	struct timespec myEnd;
+	double myTotalTime;
+};
+
+
+/* start the timer.
+ * Postcondition: myStart contains the current time.
+ */
+inline
+void NanoTimer::start() {
+	clock_gettime(CLOCK_MONOTONIC, &myStart);
+}
+
+/* stop the timer.
+ * Postcondition: myStop contains the current time.
+ */
+inline
+void NanoTimer::stop() {
+	clock_gettime(CLOCK_MONOTONIC, &myEnd);
+	myTotalTime += this->asDouble();
+}
+
+const long NSEC_PER_SEC = 1000000000;
+
+/* Utility function to compute time differences
+ *  (used by asString(), asDouble(), etc.
+ * Receive: end, begin, two timespec values.
+ * Return: end - begin
+ * Based on: http://www.gnu.org/s/libc/manual/html_node/Elapsed-Time.html
+ */
+inline
+timespec operator-(const timespec& end, const timespec& begin)
+{
+	timespec result = begin;
+	/* Perform the carry for the later subtraction. */
+	if (end.tv_nsec < begin.tv_nsec) {
+		int nsec = (begin.tv_nsec - end.tv_nsec) / NSEC_PER_SEC + 1;
+		result.tv_nsec -= NSEC_PER_SEC * nsec;
+		result.tv_sec += nsec;
+	}
+	if (end.tv_nsec - begin.tv_nsec > NSEC_PER_SEC) {
+		int nsec = (end.tv_nsec - begin.tv_nsec) / NSEC_PER_SEC;
+		result.tv_nsec += NSEC_PER_SEC * nsec;
+		result.tv_sec -= nsec;
+	}
+
+	/* Compute the time remaining to wait.
+            tv_usec is certainly positive. */
+	result.tv_sec = end.tv_sec - result.tv_sec;
+	result.tv_nsec = end.tv_nsec - result.tv_nsec;
+
+	return result;
+}
+
+/* String representation.
+ * Return: the processor time (user + system) 
+ *    used in the interval between calls to start() and stop(),
+ *    with nanosecond granularity, as a string.
+ */
+inline
+string NanoTimer::asString() const {
+    struct timespec diff = myEnd - myStart;
+    stringstream sstr;
+    sstr << diff.tv_sec 
+         << ( (diff.tv_sec == 1) ? " sec, " : " secs, " )
+         << diff.tv_nsec 
+         << " nsecs";
+    return sstr.str();
+}
+
+/* Double representation.
+ * Return: the processor time (user + system)
+ *    used in the interval between calls to start() and stop(),
+ *    with nanosecond granularity, as a double.
+ */
+inline
+double NanoTimer::asDouble() const {
+   struct timespec diff = myEnd - myStart;
+   return double(diff.tv_sec) + double(diff.tv_nsec) / double(NSEC_PER_SEC);
+}
+
+
+/* ostream output
+ * Receive: out, an ostream; aTimer, a NanoTimer.
+ * Postcondition: aTimer's double representation
+ *      has been inserted into out.
+ * Return: out (for chaining).
+ */
+inline
+ostream& operator<<(ostream& out, const NanoTimer& aTimer) {
+   out << fixed << showpoint << setprecision(9)
+	   << aTimer.getTotalTime();
+   return out;
+}
+
+/* Utility function to display a timespec structure's values
+ *  (for debugging purposes)
+ */
+inline
+ostream& operator<<(ostream& out, const struct timespec& ts) {
+   out << ts.tv_sec 
+       << ( (ts.tv_sec == 1) ? " sec, " : " secs, " )
+       << ts.tv_nsec 
+       << " nsecs";
+   return out;
+}
+
+#endif /* NANO_TIMER_H_ */
+
+/*
+*TextController.h
+*Made By Jason Pruim 
+*Feb 24, 2019
+*For CS232 at Calvin College
+*a class to run provide user input through terminal
+*/
+#include "TextInterface.h"
+#include "Model.h"
+using namespace std;
+
+
+/*declaration of TextInterface class*/
+
+class TextController{
+	private:
+	TextInterface t;
+	int repeat;
+	bool quit;
+	bool thread;
+	bool process;
+	
+	
+	void mainMenu();
+	public:
+	void simulate();
+	void run();
+	TextController();
+};
+
+
+
+
+	
+
+
+/*
+*TextInterface.h
+*Made By Jason Pruim 
+*Feb. 24, 2019
+*For CS232 at Calvin College
+*a class to handle commandline interface
+*
+*/
+
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+using namespace std;
+//Class declaration for LineInterface
+class TextInterface{
+	public:
+	TextInterface();
+	void printNoRun();
+	void printTiming(string typeName, double time);
+	void printMenu();
+	void printRepeat();
+	void printType(string typeName);
+	string getResponse();
+	void printInvalid();
+	void printNotNum();
+	void printStatus(int repeat, bool process, bool thread);
+};
+
+/*
+*callTimer2.h
+*Made By Jason Pruim 
+*Feb. 24, 2019
+*For CS232 at Calvin College
+*a project to practice interacting with shell
+*and determining the relative times between threads and processes
+*/
+#include "LineController.h"
+#include "TextController.h"
+using namespace std;
+// main function
+// runs whole simulation
+int main(int argc, char* argv[])
+{	
+ 	//Set 	default values
+	bool clInterface = false;
+	string currentVar = "";
+	//interpret values
+    	for(int i = 0; i < argc;i++){
+		currentVar = string(argv[i]);
+		if(currentVar == "-cl") {
+			clInterface = true;
+		}
+	}
+	if(clInterface){
+		LineController l = LineController(argc, argv);
+		l.run();
+	}
+	else{
+		cout<<"Starting Text Interface"<<endl;
+		TextController t = TextController();
+		t.run();
+	}
+	return 0;
+};
+/*
+*LineController.cpp
+*Made By Jason Pruim 
+*Feb 24, 2019
+*For CS232 at Calvin College
+*a class to run the model class
+*and print out results
+*/
+
+
+#include "LineController.h"
+
+using namespace std;
+
+LineController::LineController(int argc, char* argv[]){
+	process = false; thread = false; repeat = 5;
+	for(int i = 0; i < argc;i++){
+		string currentVar = string(argv[i]);
+		if(currentVar == "-p" ||currentVar =="-process"){
+			process = true;
+		}
+		else if(currentVar == "-t" ||currentVar =="-thread"){
+			thread = true;
+		}
+		else if(currentVar.substr(0,2)=="-r"){
+			try{repeat = stoi(currentVar.substr(2,string::npos));}
+			catch(...){lI.printNotNum();};
+		}
+	}
+	LineInterface lI = LineInterface();
+
+}
+/*void run
+* receives NONE
+* to create threads/processes to determine the average
+* runs the timings through model and tells Line Interface to print the average timings
+*/
+void LineController::run(){
+	if(!thread && !process){      
+		lI.printNoRun();
+		return;
+	}
+	Model m;
+	double timing = 0;	
+	if(thread){
+		timing = m.threadTiming(repeat);
+		lI.printTiming("threads",timing);
+	}
+	if(process){
+		timing = m.processTiming(repeat);
+		lI.printTiming("processes",timing);
+	}
+}
+
+/*
+*LineInterface.cpp
+*Made By Jason Pruim 
+*Feb. 24, 2019
+*For CS232 at Calvin College
+*a class to handle commandline interface
+*
+*/
+
+#include "LineInterface.h"
+using namespace std;
+
+//empty constructor
+LineInterface::LineInterface(){
+
+
+
+}
+/*
+*printNoRun()
+*cerr's a message saying no process or threads asked for
+*/
+void LineInterface::printNoRun()
+{
+	cerr << "Usage: must either run process or threads" << endl;
+}
+/*
+*printTimng(string typeName, double time)
+*prints's a message saying timing for typeName(s) to run
+*/
+void LineInterface::printTiming(string typeName, double time)
+{
+	cout<< "The average time to create "<<typeName<<" is: "<<time<<endl;
+}
+
+//printNotNum()----print invalid command msg
+void LineInterface::printNotNum()
+{
+	cout<<"input of -r was not a number"<<endl;
+
+}
+
+
+/*
+*Model.cpp
+*Made By Jason Pruim 
+*Feb. 24, 2019
+*For CS232 at Calvin College
+*a class to determine averages of thread and process creation
+*/
+#include "Model.h"
+using namespace std;
+
+
+//function to print out thread id's
+void*  Model::PrintMsg(void *threadid) {
+   	long lthreadid = (long)threadid;
+   	printf("Hello from the child thread (TID = #%ld)\n" ,lthreadid );
+   	pthread_exit(NULL);
+}
+/* function to find the average time needed to create a thread
+*takes in a integer number of trials
+*returns the average as a double
+*/
+double Model::threadTiming(int repeat){
+	double total_time = 0;
+	//create timer
+	NanoTimer timer = NanoTimer();
+   	pthread_t threads[1];
+   	for(int i = 0; i < repeat; i++ ) {
+		timer.start();
+		//find the time to create a thread (waits for it to complete in each iteration outside of timing)
+		for(int j=0;j<1;j++){
+      			pthread_create(&threads[j], NULL, &PrintMsg, (void*) (intptr_t)i);
+			timer.stop();
+			total_time+=timer.getTotalTime();
+			timer.reset();
+			pthread_join(threads[j],NULL);
+		}
+		
+	}
+	return (total_time/ (double)repeat);
+}
+/* function to find the average time needed to create a process
+*takes in a integer number of trials
+*returns the average as a double
+*/
+double Model::processTiming(int repeat) {
+	double total_time = 0;
+	//create timer
+	NanoTimer timer = NanoTimer();
+	for(int i =0; i<repeat;i++){
+		pid_t child_pid;
+		timer.start();
+		//have child print out a message and then exit
+		if ((child_pid = fork()) == 0){
+    			printf("Hello from the child process (PID = %d)\n" ,getpid() );
+   			exit(1);            	}
+		//have parent stop timer and add to total time
+		timer.stop();
+		total_time+=timer.getTotalTime();
+		timer.reset();
+	}
+	usleep(2000*repeat);		
+	return total_time/ (double)repeat;
+}
+/*
+*TextController.cpp
+*Made By Jason Pruim 
+*Feb 24, 2019
+*For CS232 at Calvin College
+*a class to run provide user input through terminal
+*/
+#include "TextController.h"
+using namespace std;
+
+//constructor
+TextController::TextController(){
+	t = TextInterface();
+	int repeat = 5;
+	quit = false;
+	thread = false;;
+	process = false;
+}
+/*
+*simulate()
+*runs the model using the private variables of class instance
+*/
+void TextController::simulate(){
+	if(!thread && !process){      
+		t.printNoRun();
+		return;
+	}
+	Model m;
+	double timing = 0;	
+	if(thread){
+		timing = m.threadTiming(repeat);
+		t.printTiming("threads",timing);
+	}
+	if(process){
+		timing = m.processTiming(repeat);
+		t.printTiming("processes",timing);
+	}
+}
+/*run()
+*loops through message passing and interprets for response
+*/
+void TextController::run(){
+	while(1){
+		if(quit){return;}
+		t.printMenu();
+		string response = t.getResponse();
+		if(response == "r"){
+			t.printRepeat();
+			response = t.getResponse();
+			try{repeat = stoi(response);}
+			catch(...){t.printNotNum();};
+		}
+		else if(response =="p"){process = !process;}
+		else if(response =="t"){thread = !thread;}
+		else if(response =="q"){quit = true;}
+		else if(response =="s"){
+			simulate();
+		}
+		else{t.printInvalid();}
+	}
+}
+
+
+
+/*
+*TextInterface.cpp
+*Made By Jason Pruim 
+*Feb. 24, 2019
+*For CS232 at Calvin College
+*a class to handle commandline interface
+*
+*/
+
+#include "TextInterface.h"
+using namespace std;
+
+//empty constructor
+TextInterface::TextInterface(){
+
+
+
+}
+/*
+*printNoRun()
+*cerr's a message saying no process or threads asked for
+*/
+void TextInterface::printNoRun()
+{
+	cerr << "Usage: must either run process or threads" << endl;
+}
+/*
+*printTimng(string typeName, double time)
+*prints's a message saying timing for typeName(s) to run
+*/
+void TextInterface::printTiming(string typeName, double time)
+{
+	cout<< "The average time to create "<<typeName<<" is: "<<time<<endl;
+}
+/*
+*printMenu()
+*prints's a message giving options
+*/
+void TextInterface::printMenu(){
+	cout<<"Welcome to Call Timer 2.0 Main Menu"<<endl;
+	cout<<"\nr: set number of trials to average over\np:to toggle calculating processes\nt: to toggle calculating threads\ns: to start the simulation\nq: quit"<<endl;
+}
+/*
+*printRepeat()
+*prints's a message about changing number of repeats
+*/
+void TextInterface::printRepeat()
+{
+	cout<<"How many trials do you wish to average over?"<<endl;
+}
+//getRespons()----Method to wait for user input
+string TextInterface::getResponse()
+{
+	string response = "";
+	cin >> response;
+	return response;
+}
+//printStatus prints the current private variables of repeat, thread, and process
+void TextInterface::printStatus(int repeat, bool process, bool thread){
+	cout<<"Current trials is: "<<repeat<<"\t Compute Process Average? "<<process<<" \t Compute Thread Average? "<<thread<<endl;
+}
+//printInvalid()----print invalid command msg
+void TextInterface::printInvalid()
+{
+	cout<<"Please input a valid command"<<endl;
+
+}
+//printNotNum()----print invalid command msg
+void TextInterface::printNotNum()
+{
+	cout<<"Please input a number"<<endl;
+
+}
+
+
+
+
+
+
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ ./a.out -cl 
+Usage: must either run process or threads
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ ./a.out -cl -t
+Hello from the child thread (TID = #0)
+Hello from the child thread (TID = #1)
+Hello from the child thread (TID = #2)
+Hello from the child thread (TID = #3)
+Hello from the child thread (TID = #4)
+The average time to create threads is: 1.77446e-05
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ ./a.out -cl -t[Kp
+Hello from the child process (PID = 19854)
+Hello from the child process (PID = 19853)
+Hello from the child process (PID = 19852)
+Hello from the child process (PID = 19851)
+Hello from the child process (PID = 19850)
+The average time to create processes is: 5.8789e-05
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ ./a.out -cl -p -r23
+Hello from the child process (PID = 19860)
+Hello from the child process (PID = 19859)
+Hello from the child process (PID = 19861)
+Hello from the child process (PID = 19858)
+Hello from the child process (PID = 19863)
+Hello from the child process (PID = 19862)
+Hello from the child process (PID = 19866)
+Hello from the child process (PID = 19857)
+Hello from the child process (PID = 19864)
+Hello from the child process (PID = 19867)
+Hello from the child process (PID = 19868)
+Hello from the child process (PID = 19869)
+Hello from the child process (PID = 19865)
+Hello from the child process (PID = 19871)
+Hello from the child process (PID = 19870)
+Hello from the child process (PID = 19856)
+Hello from the child process (PID = 19872)
+Hello from the child process (PID = 19874)
+Hello from the child process (PID = 19873)
+Hello from the child process (PID = 19876)
+Hello from the child process (PID = 19875)
+Hello from the child process (PID = 19877)
+Hello from the child process (PID = 19878)
+The average time to create processes is: 5.4574e-05
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ ./a.out -cl -p -r23[K[Kasf
+input of -r was not a number
+Hello from the child process (PID = 19884)
+Hello from the child process (PID = 19883)
+Hello from the child process (PID = 19882)
+Hello from the child process (PID = 19881)
+Hello from the child process (PID = 19880)
+The average time to create processes is: 4.73232e-05
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ ./a.out -cl -p -rasf[K[K[K[K[K[K[K[K[K[K[K[K[K
+Starting Text Interface
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+r
+How many trials do you wish to average over?
+5
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+r
+How many trials do you wish to average over?
+as
+Please input a number
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+s
+Usage: must either run process or threads
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+t
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+p
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+s
+Hello from the child thread (TID = #0)
+Hello from the child thread (TID = #1)
+Hello from the child thread (TID = #2)
+Hello from the child thread (TID = #3)
+Hello from the child thread (TID = #4)
+The average time to create threads is: 2.96534e-05
+Hello from the child process (PID = 19895)
+Hello from the child process (PID = 19894)
+Hello from the child process (PID = 19893)
+Hello from the child process (PID = 19892)
+Hello from the child process (PID = 19891)
+The average time to create processes is: 6.312e-05
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+p
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+s
+Hello from the child thread (TID = #0)
+Hello from the child thread (TID = #1)
+Hello from the child thread (TID = #2)
+Hello from the child thread (TID = #3)
+Hello from the child thread (TID = #4)
+The average time to create threads is: 1.18312e-05
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+t
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+s
+Usage: must either run process or threads
+Welcome to Call Timer 2.0 Main Menu
+
+r: set number of trials to average over
+p:to toggle calculating processes
+t: to toggle calculating threads
+s: to start the simulation
+q: quit
+q
+]0;jason@jason-VirtualBox: ~/Documents/CS232/Proj02v2[01;32mjason@jason-VirtualBox[00m:[01;34m~/Documents/CS232/Proj02v2[00m$ exit
+exit
+
+Script done on 2019-04-03 01:29:34-0400
